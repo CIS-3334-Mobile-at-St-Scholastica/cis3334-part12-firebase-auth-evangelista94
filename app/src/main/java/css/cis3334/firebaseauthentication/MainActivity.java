@@ -27,7 +27,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity  implements GoogleApiClient.OnConnectionFailedListener{
 
     private TextView textViewStatus;
     private EditText editTextEmail;
@@ -39,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private FirebaseAuth.AuthStateListener mAuthListener;
+    private GoogleApiClient mGoogleApiClient;
+    private static final int GOOGLE_SIGN_IN_FLAG = 9001;
 
     /*
      * onCreate method runs the program when the application starts
@@ -48,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mAuth = FirebaseAuth.getInstance();
         textViewStatus = (TextView) findViewById(R.id.textViewStatus);
         editTextEmail = (EditText) findViewById(R.id.editTextEmail);
         editTextPassword = (EditText) findViewById(R.id.editTextPassword);
@@ -57,7 +58,9 @@ public class MainActivity extends AppCompatActivity {
         buttonCreateLogin = (Button) findViewById(R.id.buttonCreateLogin);
         buttonSignOut = (Button) findViewById(R.id.buttonSignOut);
 
-        buttonLogin.setOnClickListener(new View.OnClickListener() {      //set oncllick listener for login button
+        mAuth = FirebaseAuth.getInstance();
+
+        buttonLogin.setOnClickListener(new View.OnClickListener() {      //set onclick listener for login button
             public void onClick(View v) {
                 signIn(editTextEmail.getText().toString(), editTextPassword.getText().toString());
                 textViewStatus.setText("Logging in");
@@ -85,7 +88,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
         mAuthListener = new FirebaseAuth.AuthStateListener() {     //Set mAuthListener to a new FirebaseAuth object
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
@@ -100,7 +102,47 @@ public class MainActivity extends AppCompatActivity {
                 // ...
             }
         };
+
+
+        //Configure Google Sign In
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        // Build a GoogleApiClient with access to the Google Sign-In API and the
+        // options specified by gso.
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
+                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
+                .build();
     }
+
+        @Override
+        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+            textViewStatus.setText("Google Account Fail");
+        }
+
+        private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
+
+            AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
+            mAuth.signInWithCredential(credential)
+                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            textViewStatus.setText("Sign In successful");
+
+                            // If sign in fails, display a message to the user. If sign in succeeds
+                            // the auth state listener will be notified and logic to handle the
+                            // signed in user can be handled in the listener.
+                            if (!task.isSuccessful()) {
+                                textViewStatus.setText("Aunthentication failed");
+                            }
+                            // ...
+                        }
+                    });
+        }
+
+
 
     /*
      * method called to start displaying activity to user
@@ -188,10 +230,27 @@ public class MainActivity extends AppCompatActivity {
      */
 
     private void googleSignIn() {
+        Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
+        startActivityForResult(signInIntent, GOOGLE_SIGN_IN_FLAG);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
+        if (requestCode == GOOGLE_SIGN_IN_FLAG) {
+            GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
+            if (result.isSuccess()) {
+                // Google Sign In was successful, authenticate with Firebase
+                GoogleSignInAccount account = result.getSignInAccount();
+                firebaseAuthWithGoogle(account);
+            } else {
+                // Google Sign In failed, update UI appropriately
+                // ...
+            }
+        }
+    }
 
     }
 
-
-
-
-}

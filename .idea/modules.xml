@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/cis3334-firebase.iml" filepath="$PROJECT_DIR$/cis3334-firebase.iml" />
       <module fileurl="file://$PROJECT_DIR$/cis3334-part12-firebase-auth-evangelista94.iml" filepath="$PROJECT_DIR$/cis3334-part12-firebase-auth-evangelista94.iml" />
     </modules>
